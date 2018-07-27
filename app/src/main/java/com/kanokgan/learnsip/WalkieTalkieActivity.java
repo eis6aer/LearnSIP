@@ -47,7 +47,7 @@ public class WalkieTalkieActivity extends Activity implements View.OnTouchListen
 
     private static final int REQUEST_MULTIPLE_PERMISSIONS = 999;
 
-    public String sipAddress = null;
+    public String sipAddress = "7001";
 
     public SipManager manager = null;
     public SipProfile me = null;
@@ -59,7 +59,8 @@ public class WalkieTalkieActivity extends Activity implements View.OnTouchListen
 
     private String[] permissions = {
             Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.READ_PHONE_STATE
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.USE_SIP,
     };
 
     private static final int CALL_ADDRESS = 1;
@@ -98,7 +99,9 @@ public class WalkieTalkieActivity extends Activity implements View.OnTouchListen
             if (ActivityCompat.checkSelfPermission(getBaseContext(),
                     android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_DENIED
                     || ActivityCompat.checkSelfPermission(getBaseContext(),
-                    android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_DENIED) {
+                    android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_DENIED
+                    || ActivityCompat.checkSelfPermission(getBaseContext(),
+                    Manifest.permission.USE_SIP) == PackageManager.PERMISSION_DENIED) {
 
                 requestPermissions(permissions, REQUEST_MULTIPLE_PERMISSIONS);
             } else {
@@ -132,6 +135,20 @@ public class WalkieTalkieActivity extends Activity implements View.OnTouchListen
         // When we get back from the preference setting Activity, assume
         // settings have changed, and re-login with new auth info.
         initializeManager();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        if (!allPermissionsGranted) return;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if (!allPermissionsGranted) return;
     }
 
     @Override
@@ -170,8 +187,8 @@ public class WalkieTalkieActivity extends Activity implements View.OnTouchListen
         }
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        String username = prefs.getString("namePref", "");
         String domain = prefs.getString("domainPref", "");
+        String username = prefs.getString("namePref", "");
         String password = prefs.getString("passPref", "");
 
         if (username.length() == 0 || domain.length() == 0 || password.length() == 0) {
