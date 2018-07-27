@@ -16,6 +16,7 @@
 
 package com.kanokgan.learnsip;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -24,8 +25,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.*;
 import android.net.sip.*;
@@ -40,6 +45,8 @@ import java.text.ParseException;
  */
 public class WalkieTalkieActivity extends Activity implements View.OnTouchListener {
 
+    private static final int REQUEST_MULTIPLE_PERMISSIONS = 999;
+
     public String sipAddress = null;
 
     public SipManager manager = null;
@@ -47,16 +54,58 @@ public class WalkieTalkieActivity extends Activity implements View.OnTouchListen
     public SipAudioCall call = null;
     public IncomingCallReceiver callReceiver;
 
+    private boolean permissionToRecordAccepted = false;
+    private boolean permissionToReadPhoneState = false;
+
+    private String[] permissions = {
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.READ_PHONE_STATE
+    };
+
     private static final int CALL_ADDRESS = 1;
     private static final int SET_AUTH_INFO = 2;
     private static final int UPDATE_SETTINGS_DIALOG = 3;
     private static final int HANG_UP = 4;
 
+    private boolean allPermissionsGranted = false;
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        switch (requestCode) {
+            case REQUEST_MULTIPLE_PERMISSIONS:
+                permissionToRecordAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                permissionToReadPhoneState = grantResults[1] == PackageManager.PERMISSION_GRANTED;
+
+                if (permissionToRecordAccepted && permissionToReadPhoneState)
+                    allPermissionsGranted = true;
+                else
+                    allPermissionsGranted = false;
+                break;
+        }
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+
+        if (Build.VERSION.SDK_INT < 23) {
+            allPermissionsGranted = true;
+        } else {
+            if (ActivityCompat.checkSelfPermission(getBaseContext(),
+                    android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_DENIED
+                    || ActivityCompat.checkSelfPermission(getBaseContext(),
+                    android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_DENIED) {
+
+                requestPermissions(permissions, REQUEST_MULTIPLE_PERMISSIONS);
+            } else {
+                allPermissionsGranted = true;
+            }
+        }
+
         setContentView(R.layout.walkietalkie);
 
         ToggleButton pushToTalkButton = (ToggleButton) findViewById(R.id.pushToTalk);
